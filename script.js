@@ -3,16 +3,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // Create galaxy background
     createGalaxyBackground();
     
-    // Initialize game board
+    // DOM Elements
     const gameBoard = document.getElementById('game-board');
     const status = document.getElementById('status');
     const playerIndicator = document.getElementById('player-indicator');
     const resetBtn = document.getElementById('resetBtn');
+    const changeMode = document.getElementById('changeMode');
     const greeting = document.getElementById('greeting');
+    const modeSelection = document.getElementById('mode-selection');
+    const gameInfo = document.getElementById('game-info');
+    const vsComputerBtn = document.getElementById('vsComputerBtn');
+    const passNPlayBtn = document.getElementById('passNPlayBtn');
     
+    // Game state variables
     let currentPlayer = 'x';
     let gameState = ['', '', '', '', '', '', '', '', ''];
-    let gameActive = true;
+    let gameActive = false;
+    let isComputerMode = false;
     
     // Win patterns (row, col, diagonals)
     const winPatterns = [
@@ -22,13 +29,18 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
     
     // Create tiles
-    for (let i = 0; i < 9; i++) {
-        const tile = document.createElement('div');
-        tile.classList.add('tile');
-        tile.dataset.index = i;
+    function createGameBoard() {
+        // Clear previous tiles
+        gameBoard.innerHTML = '';
         
-        tile.addEventListener('click', () => handleTileClick(i));
-        gameBoard.appendChild(tile);
+        for (let i = 0; i < 9; i++) {
+            const tile = document.createElement('div');
+            tile.classList.add('tile');
+            tile.dataset.index = i;
+            
+            tile.addEventListener('click', () => handleTileClick(i));
+            gameBoard.appendChild(tile);
+        }
     }
     
     // Handle tile click
@@ -36,21 +48,117 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!gameActive || gameState[index] !== '') return;
         
         // Update game state
-        gameState[index] = currentPlayer;
-        
-        // Update UI
-        const tile = document.querySelector(`.tile[data-index="${index}"]`);
-        tile.classList.add(currentPlayer);
+        makeMove(index);
         
         // Check for win or draw
         if (checkWin()) {
             endGame(false);
         } else if (checkDraw()) {
             endGame(true);
-        } else {
-            // Switch player
+        } else if (isComputerMode && currentPlayer === 'o') {
+            // Computer's turn
+            setTimeout(() => {
+                computerMove();
+            }, 700); // Small delay for better experience
+        }
+    }
+    
+    // Make a move
+    function makeMove(index) {
+        // Update game state
+        gameState[index] = currentPlayer;
+        
+        // Update UI
+        const tile = document.querySelector(`.tile[data-index="${index}"]`);
+        tile.classList.add(currentPlayer);
+        
+        // Switch player if no win/draw
+        if (!checkWin() && !checkDraw()) {
             switchPlayer();
         }
+    }
+    
+    // Computer move
+    function computerMove() {
+        if (!gameActive) return;
+        
+        const move = getBestMove();
+        makeMove(move);
+        
+        // Check for win or draw
+        if (checkWin()) {
+            endGame(false);
+        } else if (checkDraw()) {
+            endGame(true);
+        }
+    }
+    
+    // AI logic to find best move
+    function getBestMove() {
+        // First, check if computer can win in the next move
+        for (let i = 0; i < 9; i++) {
+            if (gameState[i] === '') {
+                gameState[i] = 'o';
+                const isWin = checkWinWithoutDrawing();
+                gameState[i] = ''; // Reset
+                
+                if (isWin) {
+                    return i;
+                }
+            }
+        }
+        
+        // Second, check if player can win in their next move and block them
+        for (let i = 0; i < 9; i++) {
+            if (gameState[i] === '') {
+                gameState[i] = 'x';
+                const isWin = checkWinWithoutDrawing();
+                gameState[i] = ''; // Reset
+                
+                if (isWin) {
+                    return i;
+                }
+            }
+        }
+        
+        // Third, try to take the center
+        if (gameState[4] === '') {
+            return 4;
+        }
+        
+        // Fourth, try to take the corners
+        const corners = [0, 2, 6, 8];
+        const availableCorners = corners.filter(i => gameState[i] === '');
+        if (availableCorners.length > 0) {
+            const randomIndex = Math.floor(Math.random() * availableCorners.length);
+            return availableCorners[randomIndex];
+        }
+        
+        // Last, take any available edge
+        const edges = [1, 3, 5, 7];
+        const availableEdges = edges.filter(i => gameState[i] === '');
+        if (availableEdges.length > 0) {
+            const randomIndex = Math.floor(Math.random() * availableEdges.length);
+            return availableEdges[randomIndex];
+        }
+        
+        // If no move found (shouldn't happen), pick first available
+        return gameState.findIndex(cell => cell === '');
+    }
+    
+    // Check for win without drawing the line
+    function checkWinWithoutDrawing() {
+        for (const pattern of winPatterns) {
+            const [a, b, c] = pattern;
+            if (
+                gameState[a] !== '' &&
+                gameState[a] === gameState[b] &&
+                gameState[a] === gameState[c]
+            ) {
+                return true;
+            }
+        }
+        return false;
     }
     
     // Check for win
@@ -109,8 +217,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Switch player
     function switchPlayer() {
         currentPlayer = currentPlayer === 'x' ? 'o' : 'x';
+        
+        // Update UI
         status.textContent = `Player ${currentPlayer.toUpperCase()}'s Turn`;
         playerIndicator.classList.toggle('o');
+        
+        // If it's computer mode and computer's turn
+        if (isComputerMode && currentPlayer === 'o') {
+            status.textContent = "Computer is thinking...";
+        }
     }
     
     // End game
@@ -121,14 +236,19 @@ document.addEventListener('DOMContentLoaded', () => {
             status.textContent = "Game Draw!";
             greeting.textContent = "The cosmic forces have reached equilibrium. It's a draw!";
         } else {
-            status.textContent = `Player ${currentPlayer.toUpperCase()} Wins!`;
-            greeting.textContent = `Congratulations Player ${currentPlayer.toUpperCase()}! You've conquered the galaxy!`;
+            if (isComputerMode && currentPlayer === 'o') {
+                status.textContent = "Computer Wins!";
+                greeting.textContent = "The cosmic AI has outsmarted you this time!";
+            } else {
+                status.textContent = `Player ${currentPlayer.toUpperCase()} Wins!`;
+                greeting.textContent = `Congratulations Player ${currentPlayer.toUpperCase()}! You've conquered the galaxy!`;
+            }
             greeting.classList.add('win-animation');
         }
     }
     
     // Reset game
-    resetBtn.addEventListener('click', () => {
+    function resetGame() {
         gameState = ['', '', '', '', '', '', '', '', ''];
         gameActive = true;
         currentPlayer = 'x';
@@ -147,7 +267,45 @@ document.addEventListener('DOMContentLoaded', () => {
         playerIndicator.classList.remove('o');
         greeting.textContent = "New game started! May the cosmic forces be with you.";
         greeting.classList.remove('win-animation');
-    });
+    }
+    
+    // Show game mode selection
+    function showModeSelection() {
+        modeSelection.style.display = 'flex';
+        gameBoard.style.display = 'none';
+        gameInfo.style.display = 'none';
+        greeting.textContent = "Welcome to Cosmic Tic-Tac-Toe! Select a game mode to begin your journey.";
+        greeting.classList.remove('win-animation');
+    }
+    
+    // Start game with selected mode
+    function startGame(vsComputer) {
+        isComputerMode = vsComputer;
+        modeSelection.style.display = 'none';
+        gameBoard.style.display = 'grid';
+        gameInfo.style.display = 'flex';
+        
+        // Reset and create new game
+        createGameBoard();
+        resetGame();
+        gameActive = true;
+        
+        if (vsComputer) {
+            greeting.textContent = "You're playing against the cosmic AI. Good luck!";
+        } else {
+            greeting.textContent = "Pass & Play mode activated. Player X starts!";
+        }
+    }
+    
+    // Event listeners
+    resetBtn.addEventListener('click', resetGame);
+    changeMode.addEventListener('click', showModeSelection);
+    vsComputerBtn.addEventListener('click', () => startGame(true));
+    passNPlayBtn.addEventListener('click', () => startGame(false));
+    
+    // Initialize game mode selection screen
+    createGameBoard();
+    showModeSelection();
 });
 
 // Galaxy background creation
