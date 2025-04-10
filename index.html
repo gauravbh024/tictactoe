@@ -3,16 +3,13 @@
 <html lang="en">
 <head>
     <link rel="icon" href="https://firebasestorage.googleapis.com/v0/b/codedex-io.appspot.com/o/buildAssets%2FDAEK1CDko8w7u5iBzvay%2Fminecrafttrident.webp?alt=media&token=8fb68f89-12bc-4838-8bef-e4be4a2375e1" type="image/webp">
-  <meta charset="UTF-8">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modern Galaxy Tile Tic-Tac-Toe</title>
     <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
     <div class="galaxy-bg" id="galaxy-bg"></div>
-
     <header>
         <div class="logo">COSMIC TIC-TAC-TOE</div>
         <nav>
@@ -23,29 +20,36 @@
             </ul>
         </nav>
     </header>
-
     <main>
-        <div class="game-info">
+        <!-- Game Mode Selection -->
+        <div class="mode-selection" id="mode-selection">
+            <h2>Choose Game Mode</h2>
+            <div class="mode-buttons">
+                <button id="vsComputerBtn" class="mode-btn">VS Computer</button>
+                <button id="passNPlayBtn" class="mode-btn">Pass & Play</button>
+            </div>
+        </div>
+
+        <div class="game-info" id="game-info" style="display: none;">
             <div class="player-indicator">
                 <div class="player-turn" id="player-indicator"></div>
                 <div id="status">Player X's Turn</div>
             </div>
-            <button id="resetBtn">New Game</button>
+            <div class="game-controls">
+                <button id="resetBtn">New Game</button>
+                <button id="changeMode">Change Mode</button>
+            </div>
         </div>
-
-        <div class="game-container" id="game-board">
+        <div class="game-container" id="game-board" style="display: none;">
             <!-- Tiles will be generated via JavaScript -->
         </div>
-
         <div class="greeting" id="greeting">
-            Welcome to Cosmic Tic-Tac-Toe! Click on a tile to make your move.
+            Welcome to Cosmic Tic-Tac-Toe! Select a game mode to begin your journey.
         </div>
     </main>
-
     <footer>
         &copy; 2025 Cosmic Tic-Tac-Toe | A Modern Galaxy-Themed Game
     </footer>
-
     <script src="script.js"></script>
 </body>
 </html>
